@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""1D wave equation simulation."""
-import math
-def simulate(n=200,c=1.0,dt=0.01,dx=0.05,steps=500):
-    r=(c*dt/dx)**2;u=[[0.0]*n for _ in range(3)]
-    for i in range(n): u[0][i]=math.exp(-((i-n//4)*dx)**2/0.1)
-    for i in range(1,n-1): u[1][i]=u[0][i]+0.5*r*(u[0][i+1]-2*u[0][i]+u[0][i-1])
-    history=[list(u[0]),list(u[1])]
-    for _ in range(steps):
-        for i in range(1,n-1): u[2][i]=2*u[1][i]-u[0][i]+r*(u[1][i+1]-2*u[1][i]+u[1][i-1])
-        u[0],u[1],u[2]=u[1],u[2],u[0];history.append(list(u[1]))
-    return history
-if __name__=="__main__":
-    h=simulate()
-    energy=sum(x*x for x in h[-1])
-    print(f"Wave sim: {len(h)} frames, final energy={energy:.4f}")
-    print("Wave equation OK")
+"""1D wave equation simulation with ASCII display."""
+import sys, math, time
+def simulate(n=80, steps=100, speed=0.5, damping=0.999):
+    u=[0.0]*n; v=[0.0]*n
+    u[n//4]=1.0; u[3*n//4]=-1.0
+    for step in range(steps):
+        new_u=u[:]
+        for i in range(1,n-1):
+            new_u[i]=u[i]+v[i]; v[i]=(v[i]+speed*(u[i-1]-2*u[i]+u[i+1]))*damping
+        u=new_u
+        h=10; mn,mx=-1.5,1.5
+        print(f"\033[2J\033[HStep {step}:")
+        for row in range(h,-h-1,-1):
+            threshold=row/(h+1)*(mx-mn)/2
+            line=""
+            for x in range(n): line+="█" if u[x]>=threshold else " "
+            print(line)
+        time.sleep(0.05)
+def cli():
+    steps=int(sys.argv[1]) if len(sys.argv)>1 else 60
+    simulate(steps=steps)
+if __name__=="__main__": cli()

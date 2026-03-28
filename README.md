@@ -1,11 +1,11 @@
-# Wave Sim
+# wave_sim
 
-1D wave equation simulation.
+Wave simulation — 1D wave equation with ASCII animation
 
 ## Usage
 
 ```bash
-python3 wave_sim.py
+python3 wave_sim.py --help
 ```
 
 ## License
