@@ -1,11 +1,17 @@
-# wave-sim
+# wave_sim
 
-1D and 2D wave equation simulation.
+1D wave equation simulator
+
+Single-file, zero-dependency Python CLI tool.
 
 ## Usage
 
 ```bash
-python3 wave_sim.py test
+python wave_sim.py --help
 ```
 
-Zero dependencies. Python 3.8+.
+## Test
+
+```bash
+python -c "import wave_sim; wave_sim.test()"
+```

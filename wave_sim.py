@@ -1,65 +1,63 @@
 #!/usr/bin/env python3
-"""wave_sim - 1D and 2D wave equation simulation."""
-import sys, math
+"""1D wave equation simulator using finite differences."""
+import math
 
-def wave_1d(length, steps, c=1.0, dx=0.1, dt=0.01, init=None):
-    n = int(length / dx)
-    if init is None:
-        u = [math.exp(-((i*dx - length/2)**2) / 0.1) for i in range(n)]
-    else:
-        u = list(init)
-    u_prev = u[:]
-    history = [u[:]]
-    r = (c * dt / dx) ** 2
-    for _ in range(steps):
-        u_new = [0.0] * n
-        for i in range(1, n-1):
-            u_new[i] = 2*u[i] - u_prev[i] + r*(u[i+1] - 2*u[i] + u[i-1])
-        u_prev = u
-        u = u_new
-        history.append(u[:])
-    return history
+class WaveSim:
+    def __init__(self, n=100, c=1.0, dx=0.1, dt=0.05):
+        self.n = n; self.c = c; self.dx = dx; self.dt = dt
+        self.u = [0.0] * n      # current
+        self.u_prev = [0.0] * n  # previous
+        self.r = (c * dt / dx) ** 2
 
-def wave_2d(size, steps, c=1.0, dx=0.1, dt=0.01):
-    n = int(size / dx)
-    u = [[0.0]*n for _ in range(n)]
-    # initial pulse
-    cx, cy = n//2, n//2
-    for y in range(n):
-        for x in range(n):
-            d = ((x-cx)**2 + (y-cy)**2) * dx**2
-            u[y][x] = math.exp(-d / 0.1)
-    u_prev = [row[:] for row in u]
-    r = (c * dt / dx) ** 2
-    for _ in range(steps):
-        u_new = [[0.0]*n for _ in range(n)]
-        for y in range(1, n-1):
-            for x in range(1, n-1):
-                u_new[y][x] = (2*u[y][x] - u_prev[y][x] +
-                    r*(u[y][x+1]+u[y][x-1]+u[y+1][x]+u[y-1][x]-4*u[y][x]))
-        u_prev = u
-        u = u_new
-    return u
+    def init_gaussian(self, center=None, width=5):
+        if center is None: center = self.n // 2
+        for i in range(self.n):
+            self.u[i] = math.exp(-((i - center) / width) ** 2)
+            self.u_prev[i] = self.u[i]
 
-def test():
-    h = wave_1d(5.0, 100)
-    assert len(h) == 101
-    assert len(h[0]) == 50
-    # wave should propagate (energy moves)
-    peak_0 = max(abs(v) for v in h[0])
-    peak_50 = max(abs(v) for v in h[50])
-    assert peak_0 > 0  # initial pulse
-    # 2D
-    u = wave_2d(2.0, 20)
-    assert len(u) == 20
-    assert len(u[0]) == 20
-    # center should have changed from initial
-    center = u[10][10]
-    assert isinstance(center, float)
-    print("OK: wave_sim")
+    def init_sine(self, frequency=1):
+        for i in range(self.n):
+            self.u[i] = math.sin(2 * math.pi * frequency * i / self.n)
+            self.u_prev[i] = self.u[i]
+
+    def step(self):
+        u_next = [0.0] * self.n
+        for i in range(1, self.n - 1):
+            u_next[i] = (2 * self.u[i] - self.u_prev[i] +
+                        self.r * (self.u[i+1] - 2*self.u[i] + self.u[i-1]))
+        # Fixed boundary conditions
+        u_next[0] = 0; u_next[-1] = 0
+        self.u_prev = self.u
+        self.u = u_next
+
+    def energy(self):
+        ke = sum((self.u[i] - self.u_prev[i])**2 for i in range(self.n)) / (2 * self.dt**2)
+        pe = sum((self.u[i+1] - self.u[i])**2 for i in range(self.n-1)) * self.c**2 / (2 * self.dx**2)
+        return ke + pe
+
+    def max_amplitude(self):
+        return max(abs(x) for x in self.u)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        test()
-    else:
-        print("Usage: wave_sim.py test")
+    w = WaveSim(n=50)
+    w.init_gaussian(width=3)
+    for _ in range(100):
+        w.step()
+    print(f"Max amplitude: {w.max_amplitude():.4f}")
+
+def test():
+    w = WaveSim(n=50, c=1.0, dx=0.1, dt=0.05)
+    w.init_gaussian(width=3)
+    assert w.max_amplitude() > 0
+    e0 = w.energy()
+    for _ in range(100):
+        w.step()
+    # Wave should propagate (max amplitude decreases from spreading)
+    assert w.max_amplitude() < 1.0
+    # Boundary conditions
+    assert w.u[0] == 0 and w.u[-1] == 0
+    # Sine init
+    w2 = WaveSim(n=100)
+    w2.init_sine(frequency=2)
+    assert w2.max_amplitude() > 0
+    print("  wave_sim: ALL TESTS PASSED")
