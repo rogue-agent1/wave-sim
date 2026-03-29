@@ -1,40 +1,46 @@
-#!/usr/bin/env python3
-"""Wave Simulator - 1D and 2D wave propagation with reflection."""
-import sys, math
+import argparse, math
 
-def wave_1d(length=80, steps=60, speed=1.0, damping=0.99):
-    u = [0.0]*length; u_prev = [0.0]*length
-    mid = length // 2
-    for i in range(length):
-        u[i] = math.exp(-((i-mid)/3)**2)
-    u_prev = u[:]
+def simulate(n=80, steps=200, c=1.0, dt=0.01, dx=0.1):
+    u = [0.0] * n
+    u_prev = [0.0] * n
+    # Initial Gaussian pulse
+    for i in range(n):
+        x = (i - n//3) * dx
+        u[i] = math.exp(-x*x * 10)
+        u_prev[i] = u[i]
     frames = []
-    for _ in range(steps):
-        u_next = [0.0]*length
-        for i in range(1, length-1):
-            u_next[i] = 2*u[i] - u_prev[i] + speed**2*(u[i+1]-2*u[i]+u[i-1])
-            u_next[i] *= damping
-        frames.append(u[:])
-        u_prev = u[:]; u = u_next[:]
+    r = (c * dt / dx) ** 2
+    for step in range(steps):
+        u_next = [0.0] * n
+        for i in range(1, n-1):
+            u_next[i] = 2*u[i] - u_prev[i] + r*(u[i+1] - 2*u[i] + u[i-1])
+        u_next[0] = u_next[n-1] = 0  # Fixed boundaries
+        u_prev = u[:]
+        u = u_next[:]
+        if step % (steps//10) == 0:
+            frames.append((step, u[:]))
     return frames
 
-def render_1d(frame, height=10):
-    mn, mx = min(frame), max(frame); rng = mx - mn or 1
-    grid = [[" "]*len(frame) for _ in range(height)]
-    for x, v in enumerate(frame):
+def display(u, height=10):
+    mn, mx = min(u), max(u)
+    rng = mx - mn or 1
+    grid = [[" "]*len(u) for _ in range(height)]
+    for i, v in enumerate(u):
         row = int((1 - (v - mn) / rng) * (height - 1))
-        row = max(0, min(height - 1, row))
-        grid[row][x] = "█"
-    return ["".join(r) for r in grid]
+        row = max(0, min(height-1, row))
+        grid[row][i] = "█"
+    for row in grid: print("".join(row))
 
 def main():
-    frames = wave_1d(70, 40)
-    print("=== Wave Simulator ===\n")
-    for i in [0, 5, 10, 15, 20, 30]:
-        if i < len(frames):
-            print(f"t={i}:")
-            for line in render_1d(frames[i], 8): print(f"  {line}")
-            print()
+    p = argparse.ArgumentParser(description="1D wave simulation")
+    p.add_argument("-n", "--width", type=int, default=60)
+    p.add_argument("-s", "--steps", type=int, default=200)
+    p.add_argument("-c", "--speed", type=float, default=1.0)
+    args = p.parse_args()
+    frames = simulate(args.width, args.steps, args.speed)
+    for step, u in frames:
+        print(f"--- t={step} ---")
+        display(u)
 
 if __name__ == "__main__":
     main()
