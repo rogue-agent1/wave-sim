@@ -1,11 +1,9 @@
-# wave-sim
+# Wave Equation Simulator
 
-1D wave equation simulation.
-
-Zero dependencies. Python 3.8+.
+Wave Equation Simulator — zero-dependency Python implementation.
 
 ## Usage
 
 ```bash
-python3 wave_sim.py --help
+python3 wave_sim.py
 ```
