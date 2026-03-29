@@ -1,9 +1,13 @@
-# Wave Equation Simulator
+# wave-sim
 
-Wave Equation Simulator — zero-dependency Python implementation.
+Wave Equation Simulator. Zero-dependency, single-file Python CLI.
 
 ## Usage
 
 ```bash
-python3 wave_sim.py
+python3 wave_sim.py --help
 ```
+
+## License
+
+MIT
